@@ -4,164 +4,145 @@ import pickle
 # Load model
 model = pickle.load(open("model.pkl", "rb"))
 
-# Page config
-st.set_page_config(page_title="Canteen Predictor", layout="centered")
+st.set_page_config(page_title="Canteen Predictor", layout="wide")
 
-# ---------------- TOGGLE ----------------
+# ---------------- DARK MODE ----------------
 dark_mode = st.toggle("🌙 Dark Mode")
 
-# ---------------- CSS ----------------
 if dark_mode:
-    bg_color = "#111827"
-    text_color = "#f9fafb"
-    card_color = "#1f2937"
-    title_color = "#60a5fa"
+    bg = "#0f172a"
+    card = "#1e293b"
+    text = "#f1f5f9"
+    primary = "#3b82f6"
 else:
-    bg_color = "#f9fafb"
-    text_color = "#1f2937"
-    card_color = "#ffffff"
-    title_color = "#2563eb"
+    bg = "#f8fafc"
+    card = "#ffffff"
+    text = "#1e293b"
+    primary = "#2563eb"
 
+# ---------------- CSS ----------------
 st.markdown(f"""
 <style>
-
-/* Background */
 .stApp {{
-    background-color: {bg_color};
-    color: {text_color};
+    background-color: {bg};
+    color: {text};
 }}
 
-/* Main box */
-.main-box {{
-    background: {card_color};
+.box {{
+    background: {card};
     padding: 25px;
     border-radius: 12px;
-    box-shadow: 0px 4px 10px rgba(0,0,0,0.08);
+    box-shadow: 0px 6px 15px rgba(0,0,0,0.08);
 }}
 
-/* Title */
-.title {{
-    text-align: center;
-    font-size: 32px;
-    font-weight: 600;
-    color: {title_color};
-}}
-
-/* Subtitle */
-.subtitle {{
-    text-align: center;
-    color: gray;
-    margin-bottom: 15px;
-}}
-
-/* Card */
 .card {{
-    background: {card_color};
-    padding: 18px;
+    background: {card};
+    padding: 20px;
     border-radius: 10px;
     text-align: center;
-    transition: 0.25s;
+    transition: 0.3s;
 }}
 
-/* Hover effect (soft) */
 .card:hover {{
-    transform: translateY(-4px);
-    box-shadow: 0px 6px 12px rgba(0,0,0,0.12);
+    transform: translateY(-5px);
 }}
 
-/* Button */
 .stButton>button {{
     width: 100%;
-    background-color: {title_color};
+    background: {primary};
     color: white;
     border-radius: 8px;
-    height: 42px;
-    border: none;
+    height: 45px;
 }}
-
-.stButton>button:hover {{
-    opacity: 0.9;
-}}
-
-/* Footer */
-.footer {{
-    text-align: center;
-    margin-top: 30px;
-    font-size: 18px;
-    color: gray;
-}}
-
 </style>
 """, unsafe_allow_html=True)
 
 # ---------------- TITLE ----------------
-st.markdown('<div class="title">Smart Canteen Queue Prediction</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">Vaishali Food Park</div>', unsafe_allow_html=True)
+st.markdown("<h2 style='text-align:center;'>Smart Canteen Queue Prediction</h2>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:center;'>Vaishali Food Park</p>", unsafe_allow_html=True)
 
-st.write("")
+# ---------------- MAIN BOX ----------------
+st.markdown('<div class="box">', unsafe_allow_html=True)
 
-# ---------------- INPUT ----------------
-st.markdown('<div class="main-box">', unsafe_allow_html=True)
-
+# BASIC INPUT
 col1, col2 = st.columns(2)
 
 with col1:
-    day = st.selectbox("Day", ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"])
+    day = st.selectbox("Select Day", ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"])
 
 with col2:
-    students = st.slider("Students", 0, 100)
+    time = st.selectbox("Time Slot", ["Morning","Lunch","Evening"])
 
-queue = st.slider("Queue Length", 0, 50)
+# ADVANCED MODE
+st.markdown("### Advanced Input (Optional)")
 
-# Convert day
+use_advanced = st.checkbox("I am at canteen (use real data)")
+
+if use_advanced:
+    col3, col4 = st.columns(2)
+
+    with col3:
+        students = st.slider("Number of Students", 0, 200)
+
+    with col4:
+        queue = st.slider("Queue Length", 0, 50)
+else:
+    # Default values (auto prediction based on time)
+    if time == "Morning":
+        students = 30
+        queue = 5
+    elif time == "Lunch":
+        students = 120
+        queue = 30
+    else:
+        students = 70
+        queue = 15
+
+# Day mapping
 day_map = {"Mon":1,"Tue":2,"Wed":3,"Thu":4,"Fri":5,"Sat":6,"Sun":0}
 day_val = day_map[day]
 
-st.write("")
-
-# ---------------- BUTTON ----------------
-if st.button("Predict"):
+# ---------------- PREDICT ----------------
+if st.button("Predict Waiting Time"):
 
     pred = model.predict([[day_val, students, queue]])
     wait = pred[0]
 
     if wait < 5:
         rush = "Low"
-        color = "#16a34a"
+        color = "green"
     elif wait < 12:
         rush = "Medium"
-        color = "#d97706"
+        color = "orange"
     else:
         rush = "High"
-        color = "#dc2626"
+        color = "red"
 
-    st.write("")
+    st.markdown("### 📊 Prediction Result")
 
     colA, colB = st.columns(2)
 
     with colA:
         st.markdown(f"""
         <div class="card">
-            <h4>Waiting Time</h4>
-            <h2>{wait:.2f} min</h2>
+        <h4>Waiting Time</h4>
+        <h2>{wait:.2f} min</h2>
         </div>
         """, unsafe_allow_html=True)
 
     with colB:
         st.markdown(f"""
         <div class="card">
-            <h4>Rush Level</h4>
-            <h2 style="color:{color}">{rush}</h2>
+        <h4>Rush Level</h4>
+        <h2 style='color:{color}'>{rush}</h2>
         </div>
         """, unsafe_allow_html=True)
 
-st.markdown('</div>', unsafe_allow_html=True)
-
 # ---------------- FOOTER ----------------
 st.markdown("""
-<div class="footer">
-Developed by - Team Dhurandhar<br>
-Team Mates: Purushotam, Suman, Rounak, Fareed <br>
-            Guided by -Rahul kumar (AI)
-</div>
+<br><hr>
+<center>
+<b>Developed by Team Dhurandhar</b><br>
+Purushotam | Suman | Rounak | Fareed   <br> Guided By- Rahul Kumar (Ai)
+</center> 
 """, unsafe_allow_html=True)
